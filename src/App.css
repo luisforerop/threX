@@ -2,3 +2,14 @@
   border: 1px solid #1a1a1a;
   margin: auto;
 }
+
+.overlay-blur {
+  background: rgba(52, 64, 84, 0.7);
+  backdrop-filter: blur(4px);
+  opacity: 1;
+}
+
+.area-auto {
+  resize: none;
+  field-sizing: content;
+}
