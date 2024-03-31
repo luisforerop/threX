@@ -1,16 +1,17 @@
 import type { Dispatch, FC, PropsWithChildren, SetStateAction } from "react";
 import { createContext, useContext, useEffect, useState } from "react";
-import { FormStatesType, SavedPostType } from "../models";
+import { FormStatesType, SavedPostType, ThreadType } from "../models";
 import {
   getPost,
   getPosts,
   removePost,
   savePost as savePostService,
 } from "../services";
+import { getNewThread } from "../utils";
 
 export interface PostContextType {
-  currentThreads: string[];
-  currentThreadId: number;
+  currentThreads: ThreadType[];
+  selectedThread: ThreadType | null;
   currentPostId: string | null;
   posts: SavedPostType[];
   formIsOpen: boolean;
@@ -19,8 +20,8 @@ export interface PostContextType {
   savePost: (post: SavedPostType) => void;
   deletePost: (postId: string) => void;
   closeForm: () => void;
-  setCurrentThreadId: Dispatch<SetStateAction<number>>;
-  setCurrentThreads: Dispatch<SetStateAction<string[]>>;
+  setSelectedThread: Dispatch<SetStateAction<ThreadType | null>>;
+  setCurrentThreads: Dispatch<SetStateAction<ThreadType[]>>;
 }
 
 const PostContext = createContext({} as PostContextType);
@@ -30,30 +31,33 @@ export const usePostContext = () => useContext(PostContext);
 export const CreatePostProvider: FC<PropsWithChildren> = ({ children }) => {
   const { Provider } = PostContext;
 
-  const [currentThreads, setCurrentThreads] = useState<string[]>([""]);
-  const [currentThreadId, setCurrentThreadId] = useState(0);
+  const [currentThreads, setCurrentThreads] = useState<ThreadType[]>([
+    getNewThread(),
+  ]);
   const [currentPostId, setCurrentPostId] = useState<null | string>(null);
   const [posts, setPosts] = useState<SavedPostType[]>([]);
   const [formIsOpen, setFormIsOpen] = useState(false);
+  const [selectedThread, setSelectedThread] = useState<null | ThreadType>(null);
 
   const manupulateForm = ({
     formState,
     postId,
-    threadId,
+    selectedThread,
     threads,
   }: FormStatesType) => {
     setCurrentPostId(postId);
-    setCurrentThreadId(threadId);
     setCurrentThreads(threads);
     setFormIsOpen(formState);
+    setSelectedThread(selectedThread);
   };
 
   const createPost = () => {
+    const newThread = getNewThread();
     manupulateForm({
       formState: true,
       postId: `${Date.now()}`,
-      threadId: 0,
-      threads: [""],
+      selectedThread: newThread,
+      threads: [newThread],
     });
   };
 
@@ -65,7 +69,7 @@ export const CreatePostProvider: FC<PropsWithChildren> = ({ children }) => {
     manupulateForm({
       formState: true,
       postId,
-      threadId: 0,
+      selectedThread: threads[0],
       threads,
     });
   };
@@ -81,7 +85,7 @@ export const CreatePostProvider: FC<PropsWithChildren> = ({ children }) => {
     manupulateForm({
       formState: false,
       postId: null,
-      threadId: 0,
+      selectedThread: null,
       threads: [],
     });
   };
@@ -90,11 +94,11 @@ export const CreatePostProvider: FC<PropsWithChildren> = ({ children }) => {
     // Remove empty string
     const cleanedPost = {
       ...post,
-      threads: post.threads.filter((thread) => Boolean(thread)),
+      threads: post.threads.filter((thread) => Boolean(thread.value)),
     };
 
-    savePostService(cleanedPost);
-    setPosts((curr) => curr.concat(cleanedPost));
+    const updatedPosts = savePostService(cleanedPost);
+    setPosts(updatedPosts);
     closeForm();
   };
 
@@ -104,9 +108,16 @@ export const CreatePostProvider: FC<PropsWithChildren> = ({ children }) => {
     setPosts(localPosts);
   }, []);
 
+  useEffect(() => {
+    setCurrentThreads((curr) => {
+      return curr.map((thread) =>
+        thread.id !== selectedThread?.id ? thread : selectedThread
+      );
+    });
+  }, [selectedThread]);
+
   const context: PostContextType = {
     currentThreads,
-    currentThreadId,
     currentPostId,
     posts,
     formIsOpen,
@@ -115,7 +126,8 @@ export const CreatePostProvider: FC<PropsWithChildren> = ({ children }) => {
     deletePost,
     closeForm,
     savePost,
-    setCurrentThreadId,
+    selectedThread,
+    setSelectedThread,
     setCurrentThreads,
   };
 

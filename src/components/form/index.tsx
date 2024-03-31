@@ -2,23 +2,23 @@ import { FC, useMemo, useRef } from "react";
 import { usePostContext } from "../../providers/post-provider";
 import "../../App.css";
 import { Close, Remove } from "../icons";
+import { getNewThread } from "../../utils";
 
 export const Form: FC = () => {
   const {
-    currentThreadId,
-    setCurrentThreadId,
     currentPostId,
     formIsOpen,
     closeForm,
     currentThreads,
     setCurrentThreads,
     savePost,
+    selectedThread,
+    setSelectedThread,
   } = usePostContext();
   const mainContainer = useRef(null);
-  const charactersRemaining = useMemo(
-    () => 280 - (currentThreads[currentThreadId]?.length ?? 0),
-    [currentThreadId, currentThreads]
-  );
+  const charactersRemaining = useMemo(() => {
+    return 280 - (selectedThread?.value?.length ?? 0);
+  }, [selectedThread, currentThreads]);
 
   return (
     <div
@@ -53,25 +53,40 @@ export const Form: FC = () => {
           </button>
         </div>
         <div className="flex flex-col gap-4">
-          {currentThreads.map((value, index) => {
-            if (index === currentThreadId) {
+          {currentThreads.map((thread) => {
+            const { value, id } = thread;
+            if (id === selectedThread?.id) {
               return (
-                <div className="flex gap-2" key={index}>
+                <div className="flex gap-2" key={id}>
                   <textarea
                     name=""
                     id=""
                     className="text-white bg-neutral-700 area-auto py-2 w-full"
                     rows={6}
-                    value={currentThreads[currentThreadId]}
+                    value={selectedThread.value}
                     onChange={(e) => {
-                      setCurrentThreads((curr) =>
-                        curr.map((value, index) =>
-                          index === currentThreadId ? e.target.value : value
-                        )
+                      setSelectedThread((curr) =>
+                        curr
+                          ? {
+                              ...curr,
+                              value: e.target.value,
+                            }
+                          : null
                       );
                     }}
                   />
-                  <button className="p-0 h-fit bg-transparent mt-2">
+                  <button
+                    className="p-0 h-fit bg-transparent mt-2"
+                    onClick={() => {
+                      setCurrentThreads((curr) => {
+                        const updatedThreads = curr.filter(
+                          ({ id }) => thread.id !== id
+                        );
+                        setSelectedThread(updatedThreads[0]);
+                        return updatedThreads;
+                      });
+                    }}
+                  >
                     <Remove />
                   </button>
                 </div>
@@ -79,21 +94,24 @@ export const Form: FC = () => {
             }
 
             return (
-              <p key={index} onClick={() => setCurrentThreadId(index)}>
+              <p key={id} onClick={() => setSelectedThread(thread)}>
                 {value}
               </p>
             );
           })}
         </div>
         <div className="flex justify-end items-center gap-4 mt-4">
-          <span>{charactersRemaining}</span>
+          <span className={charactersRemaining < 0 ? "text-red-600" : ""}>
+            {charactersRemaining}
+          </span>
           <button
             className="flex items-center justify-center w-8 h-8 rounded-xl"
             onClick={() => {
-              if (currentThreads[currentThreadId] === "") return;
+              if (selectedThread?.value === "") return;
 
-              setCurrentThreads((curr) => curr.concat(""));
-              setCurrentThreadId((curr) => curr + 1);
+              const newThread = getNewThread();
+              setCurrentThreads((curr) => curr.concat(newThread));
+              setSelectedThread(newThread);
             }}
           >
             +

@@ -15,7 +15,7 @@ function App() {
       <Form />
       <div className="flex flex-col max-h-[100vh] gap-4 justify-center w-full h-full items-center py-8">
         <h1>THREX</h1>
-        <div className="flex flex-col gap-1 overflow-y-scroll">
+        <div className="flex flex-col gap-1 overflow-y-scroll w-full">
           {posts.map(({ id, threads }) => (
             <section
               className="flex flex-col gap-1 border py-2 px-4 border-transparent bg-neutral-900"
@@ -25,14 +25,14 @@ function App() {
                 {threads.map((thread) => (
                   <section
                     className="border-l-2 border-dotted p-2"
-                    key={thread}
+                    key={thread.id}
                   >
                     <div className="border-b flex flex-col gap-2 pb-2">
-                      <p>{thread}</p>
+                      <p>{thread.value}</p>
                       <button
                         className="self-end w-fit p-1"
                         onClick={() => {
-                          navigator.clipboard.writeText(thread);
+                          navigator.clipboard.writeText(thread.value);
                         }}
                       >
                         <Copy />

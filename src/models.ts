@@ -1,11 +1,16 @@
+export type ThreadType = {
+  value: string;
+  id: string;
+};
+
 export type SavedPostType = {
-  threads: string[];
+  threads: ThreadType[];
   id: string;
 };
 
 export type FormStatesType = {
   postId: string | null;
-  threadId: number;
-  threads: string[];
+  selectedThread: ThreadType | null;
+  threads: ThreadType[];
   formState: boolean;
 };
